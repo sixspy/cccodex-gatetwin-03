@@ -1,18 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { 取, 递 } from "../api.js";
 
-const 夹具 = ["成对样例", "缺腿超时样例", "出站孤儿样例", "重复进站样例"];
+const 预设 = ["成对样例", "缺腿超时样例", "出站孤儿样例", "重复进站样例", "换乘窗内样例", "换乘窗外样例", "换乘并发样例"];
 
 export default function 刷卡流() {
   const [行, 设行] = useState([]);
+  const [夹具, 设夹具] = useState(预设);
   const [讯, 设讯] = useState("");
   const 刷 = () => 取("/刷卡点").then(设行);
-  useEffect(() => { 刷(); }, []);
+  useEffect(() => {
+    刷();
+    取("/夹具")
+      .then((xs) => { if (xs.length) 设夹具(xs); })
+      .catch(() => {});
+  }, []);
   const 灌 = async (名) => {
     设讯("装载中…");
     try {
       const r = await 递(`/装载/夹具?名=${encodeURIComponent(名)}`);
-      设讯(`批次 ${r.批次编号}：入流${r.入流} 开腿${r.开腿} 成对${r.成对} 旁路${r.旁路}`);
+      设讯(`批次 ${r.批次编号}：入流${r.入流} 开腿${r.开腿} 成对${r.成对} 拼接${r.拼接} 旁路${r.旁路}`);
       await 刷();
     } catch (e) {
       设讯(String(e.message || e));
@@ -21,7 +27,10 @@ export default function 刷卡流() {
   return (
     <div>
       <h1 className="题">刷卡流</h1>
-      <p className="述">从夹具灌进出闸事件。看命运：已开腿 / 已成对 / 已旁路。</p>
+      <p className="述">
+        从夹具灌进出闸事件。看命运：已开腿 / 已成对 / 已拼接 / 已旁路。
+        「换乘窗内样例」演示甲两键、乙一键含换乘点；「换乘窗外样例」演示窗外再进新开程。
+      </p>
       <div className="行">
         {夹具.map((n) => (
           <button key={n} className="次 亮片" onClick={() => 灌(n)}>{n}</button>

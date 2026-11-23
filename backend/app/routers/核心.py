@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.db import 夹具目录, 连接
-from app.services import 装载, 贯验, 目录
+from app.services import 装载, 贯验, 目录, 换乘
 
 路由 = APIRouter(prefix="/api")
 
@@ -18,7 +18,7 @@ def 健康():
     return {
         "正常": True,
         "项目": "闸对",
-        "骨架": "刷卡点装载→同卡进站出站成对物化→缺腿异向超时旁路→行程账与刷卡点互证",
+        "骨架": "刷卡点装载→同卡进站出站成对物化→换乘窗内异线拼接→缺腿异向超时旁路→行程账与刷卡点互证",
     }
 
 
@@ -130,6 +130,45 @@ def 装夹具(名: str = "成对样例"):
     if not 路径.exists():
         raise HTTPException(404, f"夹具不存在:{名}")
     return 装载.装一批(json.loads(路径.read_text(encoding="utf-8")))
+
+
+@路由.get("/夹具")
+def 列夹具():
+    if not 夹具目录.is_dir():
+        return []
+    return sorted(p.stem for p in 夹具目录.glob("*.json"))
+
+
+@路由.get("/换乘")
+def 列换乘(卡号: str = ""):
+    """换乘只读视图：卡号、换乘窗秒、行程键列表、拼接或分段标记、valid。"""
+    if 卡号:
+        return 换乘.卡换乘视图(卡号)
+    return 换乘.全卡换乘视图()
+
+
+@路由.get("/换乘/卡")
+def 取卡换乘(卡号: str):
+    return 换乘.卡换乘视图(卡号)
+
+
+@路由.get("/换乘点")
+def 列换乘点(卡号: str = "", 状态: str = "有效"):
+    conn = 连接()
+    try:
+        if 卡号:
+            rows = conn.execute(
+                "SELECT * FROM 换乘点 WHERE 卡号=? AND 状态=? ORDER BY 编号",
+                (卡号, 状态),
+            )
+        else:
+            rows = conn.execute(
+                "SELECT * FROM 换乘点 WHERE 状态=? ORDER BY 编号 DESC LIMIT 200",
+                (状态,),
+            )
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
 
 
 @路由.post("/贯验")

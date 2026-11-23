@@ -14,7 +14,7 @@ export default function 行程贯验() {
   return (
     <div>
       <h1 className="题">行程贯验</h1>
-      <p className="述">校验：每笔行程对应两笔已成对刷卡；已开腿刷卡数=在途开腿。</p>
+      <p className="述">校验：每笔行程对应同键刷卡（拼接链 2+2×换乘点）；换乘点两笔同键且异线；已开腿刷卡数=在途开腿。</p>
       <div className="行">
         <button onClick={跑}>跑贯验</button>
         <button className="次" onClick={刷}>刷新历史</button>
